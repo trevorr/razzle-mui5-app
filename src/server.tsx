@@ -26,8 +26,7 @@ const jsScriptTagsFromAssets = (assets, entrypoint, extra = "") => {
 
 export const renderApp = () => {
   const cache = createEmotionCache();
-  const { extractCriticalToChunks, constructStyleTagsFromChunks } =
-    createEmotionServer(cache);
+  const emotionServer = createEmotionServer(cache);
 
   const markup = renderToString(
     <CacheProvider value={cache}>
@@ -35,8 +34,8 @@ export const renderApp = () => {
     </CacheProvider>
   );
 
-  const emotionChunks = extractCriticalToChunks(markup);
-  const css = constructStyleTagsFromChunks(emotionChunks);
+  const emotionChunks = emotionServer.extractCriticalToChunks(markup);
+  const css = emotionServer.constructStyleTagsFromChunks(emotionChunks);
 
   const html =
     // prettier-ignore
