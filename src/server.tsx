@@ -3,9 +3,12 @@ import createEmotionServer from "@emotion/server/create-instance";
 import express from "express";
 import React from "react";
 import { renderToString } from "react-dom/server";
+import { StaticRouterContext } from "react-router";
+import { StaticRouter } from "react-router-dom";
 import App from "./App";
 import createEmotionCache from "./createEmotionCache";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const assets = require(process.env.RAZZLE_ASSETS_MANIFEST);
 
 const cssLinksFromAssets = (assets, entrypoint) => {
@@ -24,18 +27,30 @@ const jsScriptTagsFromAssets = (assets, entrypoint, extra = "") => {
   );
 };
 
-export const renderApp = () => {
-  const cache = createEmotionCache();
-  const emotionServer = createEmotionServer(cache);
+export const renderApp = (
+  req: express.Request,
+  res: express.Response
+): void => {
+  const emotionCache = createEmotionCache();
+  const emotionServer = createEmotionServer(emotionCache);
 
-  const markup = renderToString(
-    <CacheProvider value={cache}>
-      <App />
+  const routerContext: StaticRouterContext = {};
+
+  const rootHtml = renderToString(
+    <CacheProvider value={emotionCache}>
+      <StaticRouter context={routerContext} location={req.url}>
+        <App />
+      </StaticRouter>
     </CacheProvider>
   );
 
-  const emotionChunks = emotionServer.extractCriticalToChunks(markup);
-  const css = emotionServer.constructStyleTagsFromChunks(emotionChunks);
+  if (routerContext.url) {
+    res.redirect(routerContext.url);
+    return;
+  }
+
+  const emotionChunks = emotionServer.extractCriticalToChunks(rootHtml);
+  const styleTags = emotionServer.constructStyleTagsFromChunks(emotionChunks);
 
   const html =
     // prettier-ignore
@@ -48,15 +63,15 @@ export const renderApp = () => {
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,400,500">
       ${cssLinksFromAssets(assets, 'client')}
-      ${css}
+      ${styleTags}
   </head>
   <body>
-      <div id="root">${markup}</div>
+      <div id="root">${rootHtml}</div>
       ${jsScriptTagsFromAssets(assets, 'client', ' defer crossorigin')}
   </body>
 </html>`;
 
-  return { html };
+  res.send(html);
 };
 
 const server = express();
@@ -64,9 +79,6 @@ const server = express();
 server
   .disable("x-powered-by")
   .use(express.static(process.env.RAZZLE_PUBLIC_DIR))
-  .get("/*", (_, res) => {
-    const { html } = renderApp();
-    res.send(html);
-  });
+  .get("/*", renderApp);
 
 export default server;

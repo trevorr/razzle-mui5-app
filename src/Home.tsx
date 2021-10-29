@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import createStyles from "@mui/styles/createStyles";
 import makeStyles from "@mui/styles/makeStyles";
 import React from "react";
+import { Link, useHistory } from "react-router-dom";
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -17,19 +18,34 @@ const useStyles = makeStyles((theme) =>
 
 const Home = () => {
   const classes = useStyles();
+  const history = useHistory();
+  const page2Click = React.useCallback(() => {
+    history.push("/page2");
+  }, [history]);
   return (
     <Paper className={classes.root} elevation={4}>
-      <Typography variant="h3">This is a sheet of paper.</Typography>
+      <Typography variant="h3">
+        Razzle Typescript/MUI 5/React Router 5 Example
+      </Typography>
       <Typography variant="body1">
-        Paper can be used to build surface or other elements for your
-        application.
+        Click the buttons below to test routing.
       </Typography>
       <Box mt={1}>
-        <Button variant="contained" color="primary">
-          Click me
+        <Button
+          variant="contained"
+          color="primary"
+          component={Link}
+          to="/page1"
+        >
+          Page 1
         </Button>
-        <Button variant="contained" color="secondary" sx={{ ml: 1 }}>
-          Or me
+        <Button
+          variant="contained"
+          color="secondary"
+          sx={{ ml: 1 }}
+          onClick={page2Click}
+        >
+          Page 2
         </Button>
       </Box>
     </Paper>
